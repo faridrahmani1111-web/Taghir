@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>فرار از زندان — طراحی: مهندس رحمانی</title>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  body{
+    font-family:'Vazirmatn',Tahoma,sans-serif;
+    background:#050510;color:#eaf0ff;
+    min-height:100vh;display:grid;place-items:center;
+    padding:10px;overflow-x:hidden;
+  }
+  .app{width:min(680px,100%);}
+  .screen{display:none;}
+  .screen.active{display:block;animation:fade .5s;}
+  @keyframes fade{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:none;}}
+
+  /* ---------- شروع ---------- */
+  .hero{
+    text-align:center;padding:28px 22px;
+    background:linear-gradient(160deg,#1a1a3a,#0a0a1a);
+    border:1px solid rgba(255,255,255,.1);border-radius:24px;
+  }
+  .hero .emoji{font-size:64px;line-height:1;animation:float 3s ease-in-out infinite;}
+  @keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-10px);}}
+  .hero h1{
+    font-size:clamp(24px,6vw,32px);font-weight:900;margin:12px 0;
+    background:linear-gradient(90deg,#ffd166,#ff6b9d);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .story-box{
+    text-align:right;background:rgba(0,0,0,.35);
+    border-right:4px solid #ffd166;
+    padding:14px 16px;border-radius:12px;
+    font-size:13px;line-height:2.05;color:#cfd8f5;
+    margin-bottom:18px;
+  }
+  .story-box b{color:#ffd166;}
+  .story-box .chem{color:#ff9ed0;}
+  .story-box .phys{color:#7ddfff;}
+  .bag{
+    display:flex;justify-content:center;gap:6px;
+    flex-wrap:wrap;margin-bottom:18px;
+  }
+  .bag>div{
+    background:rgba(255,255,255,.08);
+    border:1px solid rgba(255,255,255,.15);
+    border-radius:12px;padding:8px 10px;
+    font-size:11px;text-align:center;min-width:56px;
+  }
+  .bag .ico{font-size:22px;display:block;line-height:1;margin-bottom:4px;}
+
+  /* نشان طراح */
+  .designer-badge{
+    text-align:center;margin:16px 0 20px;
+  }
+  .designer-badge .seal{
+    display:inline-block;padding:14px 28px;
+    background:linear-gradient(135deg,#ffd166,#ff9f1c);
+    border-radius:50px;
+    box-shadow:0 8px 24px rgba(255,209,102,.4),
+               inset 0 0 0 3px rgba(0,0,0,.1);
+    transform:rotate(-3deg);
+  }
+  .designer-badge .seal .lbl{
+    font-size:10px;color:#3a2400;letter-spacing:3px;font-weight:900;
+  }
+  .designer-badge .seal .name{
+    font-size:18px;color:#1a1000;font-weight:900;letter-spacing:.5px;margin-top:2px;
+  }
+
+  .big-btn{
+    font-family:inherit;font-size:17px;font-weight:900;
+    padding:14px 34px;border:none;border-radius:50px;cursor:pointer;
+    background:linear-gradient(135deg,#ffd166,#ff9f1c);
+    color:#20160a;box-shadow:0 10px 30px rgba(255,209,102,.35);
+    transition:transform .15s;
+  }
+  .big-btn:active{transform:scale(.96);}
+
+  /* ---------- HUD ---------- */
+  .hud{display:flex;gap:8px;margin-bottom:10px;}
+  .hud>div{
+    flex:1;background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.1);
+    border-radius:12px;padding:8px;
+    text-align:center;font-size:10.5px;
+  }
+  .hud span{display:block;color:#8b93b8;margin-bottom:2px;}
+  .hud b{font-size:15px;color:#ffd166;font-weight:900;}
+
+  /* ---------- صحنه ---------- */
+  .stage{
+    position:relative;height:280px;border-radius:20px;
+    overflow:hidden;margin-bottom:10px;
+    border:2px solid rgba(255,255,255,.08);
+    transition:background .8s;
+    display:grid;place-items:center;
+  }
+  .door-frame{
+    position:relative;width:130px;height:190px;
+    background:linear-gradient(180deg,#3a2810,#1a1005);
+    border:6px solid #7a5a28;border-radius:8px 8px 0 0;
+    display:flex;align-items:center;justify-content:center;
+    transition:all .8s;z-index:2;
+    box-shadow:0 0 30px rgba(0,0,0,.6) inset;
+  }
+  .door-frame.opened{
+    background:linear-gradient(180deg,#0a0a1a,#000);
+    border-color:#4a3a18;
+    box-shadow:0 0 60px rgba(255,255,200,.4);
+  }
+  .door-frame .opening-icon{
+    position:absolute;font-size:44px;
+    opacity:0;transition:opacity .6s .4s;
+  }
+  .door-frame.opened .opening-icon{opacity:1;}
+  .door-lock{
+    position:absolute;font-size:34px;
+    top:50%;left:50%;transform:translate(-50%,-50%);
+    transition:all .6s;z-index:3;
+    filter:drop-shadow(0 3px 5px rgba(0,0,0,.5));
+  }
+  .door-lock.unlocked{
+    transform:translate(-50%,-50%) rotate(-15deg) scale(1.15);
+    filter:drop-shadow(0 0 14px #ffd166);
+  }
+  .door-lock.broken{
+    transform:translate(-50%,-50%) rotate(80deg) translateY(50px);
+    opacity:0;
+  }
+
+  .fx{
+    position:absolute;pointer-events:none;
+    filter:drop-shadow(0 3px 6px rgba(0,0,0,.4));
+  }
+  .pop-fx{animation:popFx 1s ease-out forwards;}
+  @keyframes popFx{
+    0%{opacity:0;transform:scale(.3);}
+    40%{opacity:1;transform:scale(1.2);}
+    100%{opacity:0;transform:scale(1.4) translateY(-30px);}
+  }
+  .ice-cube{
+    position:absolute;font-size:26px;
+    transition:all .9s;z-index:1;
+  }
+  .ice-cube.melted{
+    opacity:0;transform:translateY(40px) scale(.2);
+  }
+  .drip{
+    position:absolute;font-size:16px;
+    animation:dripA 1.5s ease-in forwards;
+    z-index:1;
+  }
+  @keyframes dripA{
+    0%{opacity:1;transform:translateY(0);}
+    100%{opacity:0;transform:translateY(60px);}
+  }
+  .flame{
+    position:absolute;font-size:28px;
+    animation:flickA .5s ease-in-out infinite alternate;
+    z-index:5;
+    filter:drop-shadow(0 0 12px #ff9f1c);
+  }
+  @keyframes flickA{
+    from{transform:scale(1) rotate(-4deg);}
+    to{transform:scale(1.12) rotate(4deg);}
+  }
+  .smoke{
+    position:absolute;font-size:22px;
+    animation:smokeA 2s ease-out forwards;
+    z-index:1;opacity:0;
+  }
+  @keyframes smokeA{
+    0%{opacity:0;transform:translateY(0) scale(.8);}
+    30%{opacity:.9;}
+    100%{opacity:0;transform:translateY(-80px) scale(1.4);}
+  }
+  .alarm-flash{
+    position:absolute;inset:0;pointer-events:none;
+    background:rgba(255,0,0,.45);
+    animation:flashA .35s infinite alternate;
+    z-index:10;
+  }
+  @keyframes flashA{from{opacity:0;}to{opacity:.7;}}
+  .scan-line{
+    position:absolute;inset:0;pointer-events:none;
+    background:linear-gradient(180deg,transparent 0%,rgba(0,255,150,.5) 50%,transparent 100%);
+    animation:scanA 1.4s ease-in-out 2;z-index:8;
+  }
+  @keyframes scanA{
+    0%{transform:translateY(-100%);}
+    100%{transform:translateY(100%);}
+  }
+  .engine-shake{
+    animation:engShake .12s infinite alternate !important;
+  }
+  @keyframes engShake{
+    from{transform:translate(0,0) rotate(-2deg);}
+    to{transform:translate(1px,0) rotate(2deg);}
+  }
+  .rope-pull{
+    transition:all 1.4s ease-out;
+  }
+
+  /* ---------- متن داستان ---------- */
+  .story-line{
+    padding:12px 14px;
+    background:rgba(255,209,102,.1);
+    border:1px solid rgba(255,209,102,.3);
+    border-radius:14px;
+    font-size:12.5px;line-height:1.95;
+    color:#ffe6a8;margin-bottom:10px;
+    text-align:right;
+  }
+  .story-line .quote{color:#ffd166;font-weight:900;}
+
+  /* ---------- فیدبک ---------- */
+  .feedback{
+    padding:12px 14px;border-radius:14px;
+    font-size:12.5px;line-height:2;margin-bottom:10px;
+    display:none;animation:fade .35s;
+  }
+  .feedback.show{display:block;}
+  .feedback.ok{
+    background:linear-gradient(135deg,rgba(6,214,160,.18),rgba(6,214,160,.04));
+    border:1px solid rgba(6,214,160,.4);
+    color:#b5ffd9;
+  }
+  .feedback.bad{
+    background:rgba(239,71,111,.15);
+    border:1px solid rgba(239,71,111,.4);
+    color:#ffc0cd;
+  }
+  .feedback.info{
+    background:linear-gradient(135deg,rgba(76,201,240,.15),rgba(76,201,240,.04));
+    border:1px solid rgba(76,201,240,.35);
+    color:#b5ecff;
+  }
+  .feedback b{color:#fff;}
+  .feedback .badge{
+    display:inline-block;padding:3px 9px;
+    border-radius:50px;font-size:10.5px;
+    font-weight:900;margin-left:4px;
+  }
+  .badge.phys{background:rgba(76,201,240,.3);color:#7ddfff;}
+  .badge.chem{background:rgba(247,37,133,.3);color:#ff9ed0;}
+  .badge.work{background:rgba(6,214,160,.3);color:#7dffd4;}
+
+  /* ---------- کوله ---------- */
+  .inv-title{
+    font-size:10.5px;color:#8b93b8;
+    text-align:center;margin-bottom:6px;
+    letter-spacing:.6px;font-weight:700;
+  }
+  .inventory{
+    display:grid;grid-template-columns:repeat(5,1fr);
+    gap:6px;margin-bottom:10px;
+  }
+  .inv-item{
+    background:linear-gradient(160deg,rgba(255,255,255,.08),rgba(255,255,255,.02));
+    border:2px solid rgba(255,255,255,.12);
+    border-radius:14px;padding:9px 3px;
+    text-align:center;cursor:pointer;
+    transition:all .2s;
+  }
+  .inv-item:hover:not(.used){
+    transform:translateY(-3px);
+    border-color:#ffd166;
+    box-shadow:0 6px 18px rgba(255,209,102,.25);
+  }
+  .inv-item:active:not(.used){transform:scale(.95);}
+  .inv-item .ico{
+    font-size:26px;display:block;line-height:1;margin-bottom:4px;
+    filter:drop-shadow(0 3px 5px rgba(0,0,0,.4));
+  }
+  .inv-item .lbl{font-size:9.5px;color:#dfe6ff;font-weight:700;}
+  .inv-item.used{opacity:.22;pointer-events:none;filter:grayscale(.7);}
+  .inv-item.shake{animation:shA .4s;}
+  @keyframes shA{
+    0%,100%{transform:translateX(0);}
+    25%{transform:translateX(-7px);}
+    75%{transform:translateX(7px);}
+  }
+
+  /* ---------- دکمه‌ها ---------- */
+  .next-bar{display:flex;justify-content:center;gap:8px;margin-top:6px;}
+  .next-btn{
+    font-family:inherit;font-size:15px;font-weight:900;
+    padding:12px 26px;border:none;border-radius:50px;cursor:pointer;
+    background:linear-gradient(135deg,#06d6a0,#00b894);
+    color:#04241b;box-shadow:0 8px 24px rgba(6,214,160,.4);
+    transition:transform .15s;display:none;
+  }
+  .next-btn.show{display:inline-block;animation:fade .4s;}
+  .next-btn:active{transform:scale(.95);}
+  .hint-btn{
+    font-family:inherit;font-size:13px;font-weight:700;
+    padding:12px 18px;border-radius:50px;cursor:pointer;
+    background:rgba(255,255,255,.08);color:#cfd8f5;
+    border:1px solid rgba(255,255,255,.15);
+    transition:all .15s;
+  }
+  .hint-btn:active{transform:scale(.95);}
+
+  /* ---------- پایان ---------- */
+  .end-box{
+    text-align:center;padding:30px 22px;
+    background:linear-gradient(160deg,#1a1a3a,#0a0a1a);
+    border:1px solid rgba(255,255,255,.12);border-radius:24px;
+  }
+  .end-box .score-big{
+    font-size:50px;font-weight:900;color:#ffd166;
+    line-height:1;margin:12px 0 4px;
+  }
+  .end-box .lbl{color:#8b93b8;font-size:11px;margin-bottom:16px;}
+  .end-box .msg{
+    font-size:13px;line-height:2.1;color:#c8d2ee;
+    margin-bottom:20px;text-align:right;
+    background:rgba(0,0,0,.25);
+    padding:14px;border-radius:12px;
+  }
+
+  /* فوتر طراح */
+  .designer-footer{
+    position:fixed;bottom:6px;left:50%;transform:translateX(-50%);
+    font-size:10px;color:#5a6488;letter-spacing:1px;
+    pointer-events:none;white-space:nowrap;z-index:999;
+  }
+  .designer-footer .name{color:#ffd166;font-weight:700;}
+
+  @media (max-width:400px){
+    .stage{height:240px;}
+    .inv-item .ico{font-size:22px;}
+    .inv-item .lbl{font-size:9px;}
+    .door-frame{width:110px;height:170px;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ======================== شروع ======================== -->
+  <section id="scr-start" class="screen active">
+    <div class="hero">
+      <div class="emoji">🔓🚪</div>
+      <h1>فرار از زندان</h1>
+      <div class="story-box">
+        🕵️ تو یک زندانی هستی که قصد فرار داری.<br>
+        در راه خروجی، <b>۵ در</b> سدّ راهت هستند.<br>
+        برای باز کردن هر در باید یه کار بکنی:<br>
+        🧊 <span class="phys">تغییر فیزیکی</span><br>
+        🔥 <span class="chem">تغییر شیمیایی</span><br>
+        ⚙️ <span class="chem">تبدیل انرژی شیمیایی به کار</span>
+      </div>
+      <div class="inv-title">🎒 کوله‌ات</div>
+      <div class="bag">
+        <div><span class="ico">🔥</span>مشعل</div>
+        <div><span class="ico">🧂</span>جوش‌شیرین</div>
+        <div><span class="ico">✂️</span>قیچی</div>
+        <div><span class="ico">⛽</span>بنزین</div>
+        <div><span class="ico">🪢</span>طناب</div>
+      </div>
+
+      <div class="designer-badge">
+        <div class="seal">
+          <div class="lbl">طراح بازی</div>
+          <div class="name">مهندس رحمانی</div>
+        </div>
+      </div>
+
+      <button class="big-btn" onclick="startGame()">شروع فرار 🏃</button>
+    </div>
+  </section>
+
+  <!-- ======================== بازی ======================== -->
+  <section id="scr-game" class="screen">
+    <div class="hud">
+      <div><span>در</span><b id="hudDoor">۱ از ۵</b></div>
+      <div><span>امتیاز</span><b id="hudScore">۰</b></div>
+      <div><span>اشتباه</span><b id="hudErr">۰</b></div>
+    </div>
+
+    <div class="stage" id="stage"></div>
+    <div class="story-line" id="storyLine"></div>
+    <div class="feedback" id="feedback"></div>
+
+    <div class="inv-title">🎒 کوله‌ات — یکی رو انتخاب کن</div>
+    <div class="inventory" id="inventory"></div>
+
+    <div class="next-bar">
+      <button class="hint-btn" id="hintBtn" onclick="showHint()">💡 راهنما</button>
+      <button class="next-btn" id="nextBtn" onclick="nextDoor()">در بعدی ←</button>
+    </div>
+  </section>
+
+  <!-- ======================== پایان ======================== -->
+  <section id="scr-end" class="screen">
+    <div class="end-box">
+      <div style="font-size:60px">🏆🌙</div>
+      <h1 style="font-size:22px;margin:8px 0">آزاد شدی!</h1>
+      <p style="color:#cfd8f5;font-size:13px;line-height:2;margin-bottom:8px">
+        از زندان فرار کردی و حالا سه چیز رو یاد گرفتی:
+      </p>
+      <div class="score-big" id="endScore">۰</div>
+      <div class="lbl">امتیاز نهایی</div>
+
+      <div style="margin:14px 0 18px;padding:10px 14px;
+                  background:linear-gradient(135deg,rgba(255,209,102,.15),rgba(255,107,157,.1));
+                  border:1px dashed rgba(255,209,102,.5);
+                  border-radius:14px;
+                  font-size:12.5px;color:#ffe6a8;line-height:1.9">
+        <div style="font-size:10.5px;color:#ffb84d;letter-spacing:2px;margin-bottom:4px">✦ طراحی و ایده ✦</div>
+        <div style="font-size:16px;font-weight:900;color:#ffd166">مهندس رحمانی</div>
+      </div>
+
+      <div class="msg" id="endMsg"></div>
+      <button class="big-btn" onclick="startGame()">بازی مجدد 🔄</button>
+    </div>
+  </section>
+</div>
+
+<!-- فوتر طراح -->
+<div class="designer-footer">
+  طراحی: <span class="name">مهندس رحمانی</span>
+</div>
+
+<script>
+/* ============================================================
+   وسایل کوله
+   ============================================================ */
+const ITEMS = {
+  torch:    { emoji:'🔥', name:'مشعل' },
+  soda:     { emoji:'🧂', name:'جوش‌شیرین' },
+  scissors: { emoji:'✂️', name:'قیچی' },
+  gasoline: { emoji:'⛽', name:'بنزین' },
+  rope:     { emoji:'🪢', name:'طناب' }
+};
+
+/* ============================================================
+   ۵ در — هر در یه صحنه و یه راه‌حل
+   ============================================================ */
+const LEVELS = [
+
+/* ---------- در ۱: تغییر فیزیکی — ذوب یخ ---------- */
+{
+  title:'در اول · سلول',
+  bg:'radial-gradient(circle at 50% 40%, #1c2a4a, #06060f 80%)',
+  sceneHTML:`
+    <span class="ice-cube" style="top:22%;right:14%">🧊</span>
+    <span class="ice-cube" style="top:52%;right:10%">🧊</span>
+    <span class="ice-cube" style="bottom:22%;right:24%">❄️</span>
+    <div class="door-frame" id="doorFrame">
+      <span class="opening-icon">🌙</span>
+      <span class="door-lock" id="doorLock">🔒</span>
+    </div>
+    <span class="ice-cube" style="top:26%;left:14%">🧊</span>
+    <span class="ice-cube" style="top:56%;left:12%">🧊</span>
+  `,
+  story:'🥶 دور قفل این در یخ ضخیمی جمع شده. اگر یخ آب بشه، قفل می‌چرخه.',
+  hint:'با چی می‌تونی یخ رو آب کنی؟',
+  steps:[
+    {
+      item:'torch',
+      animate: async (stage) => {
+        const flame = mk('span','flame',stage,{right:'15%',top:'45%'});
+        flame.textContent = '🔥';
+        await wait(400);
+        const cubes = stage.querySelectorAll('.ice-cube');
+        for(let i=0;i<cubes.length;i++){
+          const c = cubes[i];
+          c.classList.add('melted');
+          const drip = mk('span','drip',stage,{
+            left: c.style.left || 'auto',
+            right: c.style.right || 'auto',
+            top: c.style.top || '50%'
+          });
+          drip.textContent = '💧';
+          setTimeout(()=>drip.remove(), 1600);
+          await wait(250);
+        }
+        await wait(300);
+        const lock = document.getElementById('doorLock');
+        lock.textContent = '🔓';
+        lock.classList.add('unlocked');
+        await wait(700);
+        document.getElementById('doorFrame').classList.add('opened');
+        await wait(500);
+      },
+      message:`
+        🔥 مشعل یخ‌ها رو آب کرد!<br><br>
+        <span class="badge phys">🧊 تغییر فیزیکی</span><br>
+        یخ <b>جامد</b> شد آب <b>مایع</b>، ولی هر دو <b>یک ماده</b> (H₂O) هستن.
+        فقط <b>حالت</b> ماده عوض شد، مادهٔ جدیدی ساخته نشد ← پس تغییر <b>فیزیکی</b>ه.
+      `
+    }
+  ]
+},
+
+/* ---------- در ۲: تغییر شیمیایی — جوش‌شیرین ---------- */
+{
+  title:'در دوم · قفل مخصوص',
+  bg:'radial-gradient(circle at 50% 45%, #2a1a4a, #06060f 80%)',
+  sceneHTML:`
+    <div class="door-frame" id="doorFrame">
+      <span class="opening-icon">🌙</span>
+      <span class="door-lock" id="doorLock">🔒</span>
+      <span id="chamberIcon" style="position:absolute;top:30%;right:6%;font-size:20px">🧪</span>
+    </div>
+  `,
+  story:'🔒 این قفل یه محفظهٔ کوچیک داره. اگر ماده‌ای بریزی که <b>گاز</b> تولید کنه، فشار گاز قفل رو می‌شکنه!',
+  hint:'جوش‌شیرین با گرما گاز CO₂ می‌ده. اول چی بریز، بعد چی روشن کن؟',
+  steps:[
+    {
+      item:'soda',
+      animate: async (stage) => {
+        const powder = mk('span','fx pop-fx',stage,{right:'20%',top:'42%'});
+        powder.textContent = '🧂';
+        await wait(700);
+      },
+      message:`🧂 جوش‌شیرین داخل محفظهٔ قفل ریخته شد.<br>
+              <span style="color:#7ddfff">💡 حالا وقتشه گرمش کنی.</span>`
+    },
+    {
+      item:'torch',
+      animate: async (stage) => {
+        const flame = mk('span','flame',stage,{right:'24%',top:'42%'});
+        flame.textContent = '🔥';
+        await wait(400);
+        for(let i=0;i<6;i++){
+          const g = mk('span','smoke',stage,{
+            right:(15+Math.random()*20)+'%',
+            top:(35+Math.random()*20)+'%'
+          });
+          g.textContent = '💨';
+          g.style.animationDelay = (i*0.1)+'s';
+          setTimeout(()=>g.remove(),2600);
+        }
+        await wait(700);
+        const boom = mk('span','fx pop-fx',stage,{left:'50%',top:'45%'});
+        boom.textContent = '💥';
+        boom.style.fontSize = '48px';
+        boom.style.transform = 'translate(-50%,-50%)';
+        sndBoom();
+        await wait(300);
+        const lock = document.getElementById('doorLock');
+        lock.textContent = '💥';
+        lock.classList.add('broken');
+        await wait(500);
+        document.getElementById('doorFrame').classList.add('opened');
+        await wait(500);
+      },
+      message:`
+        💥 گاز قفل رو ترکوند!<br><br>
+        <span class="badge chem">🔥 تغییر شیمیایی</span><br>
+        گرما باعث شد جوش‌شیرین <b>تجزیه</b> بشه و گاز <b>کربن‌دی‌اکسید (CO₂)</b> بسازه.
+        CO₂ یک <b>مادهٔ جدید</b>ه ← پس تغییر <b>شیمیایی</b>ه.<br>
+        <span style="color:#7dffd4">⚙️ انرژی شیمیایی جوش‌شیرین به <b>کار</b> تبدیل شد (شکستن قفل)!</span>
+      `
+    }
+  ]
+},
+
+/* ---------- در ۳: تغییر فیزیکی — بریدن کارت ---------- */
+{
+  title:'در سوم · دوربین تشخیص چهره',
+  bg:'radial-gradient(circle at 50% 45%, #0a2038, #06060f 80%)',
+  sceneHTML:`
+    <div class="door-frame" id="doorFrame">
+      <span class="opening-icon">🌙</span>
+      <span class="door-lock" id="doorLock">📹</span>
+      <span id="guardCard" style="position:absolute;top:12%;left:8%;font-size:30px">🪪</span>
+    </div>
+  `,
+  story:'📹 این در با دوربین تشخیص چهره باز می‌شه. تو یه کارت نگهبان داری. باید <b>عکس</b> از کارت جدا بشه تا دوربین قبولش کنه.',
+  hint:'کارت بزرگ‌تر از دوربینه! با چی می‌تونی عکس رو جدا کنی؟',
+  steps:[
+    {
+      item:'scissors',
+      animate: async (stage) => {
+        const card = document.getElementById('guardCard');
+        card.style.transition = 'all .8s';
+        const sc = document.createElement('span');
+        sc.textContent = '✂️';
+        sc.style.cssText = 'position:absolute;top:15%;left:8%;font-size:26px;z-index:5';
+        stage.appendChild(sc);
+        card.style.transform = 'scale(1.15) rotate(-8deg)';
+        await wait(700);
+        sc.remove();
+        card.textContent = '📷';
+        card.style.fontSize = '34px';
+        const piece = mk('span','fx pop-fx',stage,{top:'18%',left:'12%'});
+        piece.textContent = '✂️';
+        await wait(300);
+        const scan = document.createElement('div');
+        scan.className = 'scan-line';
+        stage.appendChild(scan);
+        sndOk();
+        await wait(1600);
+        scan.remove();
+        const lock = document.getElementById('doorLock');
+        lock.textContent = '✅';
+        lock.classList.add('unlocked');
+        await wait(600);
+        document.getElementById('doorFrame').classList.add('opened');
+        await wait(500);
+      },
+      message:`
+        ✂️ عکس از کارت جدا شد و دوربین قبولش کرد!<br><br>
+        <span class="badge phys">🧊 تغییر فیزیکی</span><br>
+        قیچی فقط کارت رو <b>برید</b>. کاغذ همچنان کاغذه — فقط <b>شکل و اندازه‌اش</b> عوض شده.
+        مادهٔ جدیدی ساخته نشد ← پس تغییر <b>فیزیکی</b>ه.
+      `
+    }
+  ]
+},
+
+/* ---------- در ۴: تغییر شیمیایی مفید — آژیر ---------- */
+{
+  title:'در چهارم · راهرو نگهبانی',
+  bg:'radial-gradient(circle at 50% 60%, #2a1a0a, #06060f 80%)',
+  sceneHTML:`
+    <div class="door-frame" id="doorFrame">
+      <span class="opening-icon">🌙</span>
+      <span class="door-lock" id="doorLock">🚨</span>
+    </div>
+    <span style="position:absolute;top:8%;right:14%;font-size:24px">🚨</span>
+    <span style="position:absolute;bottom:10%;left:12%;font-size:28px">🗑️</span>
+    <span style="position:absolute;bottom:8%;left:26%;font-size:16px">📄📄</span>
+  `,
+  story:'🚨 نگهبان‌ها پشت این در هستن! اگر یه آتش کوچیک راه بندازی، آژیر روشن می‌شه و نگهبان‌ها فرار می‌کنن.',
+  hint:'برای روشن کردن آتش چی لازمه؟ اول چی بریز، بعد چی روشن کن؟',
+  steps:[
+    {
+      item:'gasoline',
+      animate: async (stage) => {
+        const pour = mk('span','fx pop-fx',stage,{top:'20%',left:'20%'});
+        pour.textContent = '⛽';
+        await wait(800);
+        const puddle = document.createElement('span');
+        puddle.textContent = '💧';
+        puddle.style.cssText = 'position:absolute;bottom:14%;left:18%;font-size:28px;opacity:.75;filter:drop-shadow(0 0 4px #ff9f1c)';
+        puddle.id = 'puddle';
+        stage.appendChild(puddle);
+        await wait(500);
+      },
+      message:'⛽ بنزین روی کاغذها ریخته شد. حالا باید یه جرقه بزنی!'
+    },
+    {
+      item:'torch',
+      animate: async (stage) => {
+        const flame = mk('span','flame',stage,{bottom:'14%',left:'18%'});
+        flame.textContent = '🔥';
+        await wait(500);
+        for(let i=0;i<5;i++){
+          const s = mk('span','smoke',stage,{
+            left:(16+Math.random()*10)+'%',
+            bottom:(20+Math.random()*10)+'%'
+          });
+          s.textContent = '💨';
+          s.style.animationDelay = (i*0.15)+'s';
+          setTimeout(()=>s.remove(),2600);
+        }
+        await wait(900);
+        const alarm = document.createElement('div');
+        alarm.className = 'alarm-flash';
+        stage.appendChild(alarm);
+        sndBoom();
+        await wait(1600);
+        alarm.remove();
+        document.getElementById('doorFrame').classList.add('opened');
+        await wait(500);
+      },
+      message:`
+        🚨 آژیر روشن شد و نگهبان‌ها فرار کردن!<br><br>
+        <span class="badge chem">🔥 تغییر شیمیایی — مفید</span><br>
+        بنزین <b>سوخت</b> و مواد جدیدی مثل دود، بخار آب و CO₂ ساخت ← تغییر <b>شیمیایی</b>.<br>
+        <span style="color:#7dffd4">💡 این تغییر شیمیایی برای ما <b>مفید</b> بود، چون حواس نگهبان‌ها رو پرت کرد!</span><br>
+        <span style="color:#ffb8c8">⚠️ ولی یادت باشه: همون آتش می‌تونست خیلی <b>مضر</b> باشه و کل زندان رو بسوزونه. بعضی تغییرهای شیمیایی مفیدن، بعضی خطرناک!</span>
+      `
+    }
+  ]
+},
+
+/* ---------- در ۵: تغییر شیمیایی → کار ---------- */
+{
+  title:'در پنجم · دروازهٔ آهنی',
+  bg:'radial-gradient(circle at 50% 55%, #1a0f08, #06060f 80%)',
+  sceneHTML:`
+    <div class="door-frame" id="doorFrame" style="width:150px;height:200px">
+      <span class="opening-icon">🌙</span>
+      <span class="door-lock" id="doorLock">⛓️</span>
+    </div>
+    <span id="engine" style="position:absolute;bottom:14%;left:10%;font-size:34px;filter:drop-shadow(0 3px 6px rgba(0,0,0,.5))">⚙️</span>
+    <span id="ropeSlot" style="position:absolute;bottom:28%;left:16%;font-size:20px;opacity:.4">🪢</span>
+  `,
+  story:'⚙️ این دروازه آهنی خیلی سنگینه. کنارش یه موتور کوچیک هست که با طناب به دروازه وصل می‌شه. اگر موتور کار کنه، دروازه باز می‌شه!',
+  hint:'چی لازم داری؟ طناب؟ بنزین؟ مشعل؟ به ترتیب فکر کن...',
+  steps:[
+    {
+      item:'rope',
+      animate: async (stage) => {
+        const rope = document.getElementById('ropeSlot');
+        rope.style.transition = 'all .8s';
+        rope.style.opacity = '1';
+        rope.style.transform = 'rotate(-30deg) scale(1.2)';
+        await wait(700);
+      },
+      message:'🪢 طناب به موتور و دروازه وصل شد. حالا موتور چی لازم داره؟'
+    },
+    {
+      item:'gasoline',
+      animate: async (stage) => {
+        const pour = mk('span','fx pop-fx',stage,{bottom:'30%',left:'10%'});
+        pour.textContent = '⛽';
+        await wait(700);
+      },
+      message:'⛽ بنزین داخل موتور ریخته شد. حالا باید روشنش کنی!'
+    },
+    {
+      item:'torch',
+      animate: async (stage) => {
+        const flame = mk('span','flame',stage,{bottom:'18%',left:'10%'});
+        flame.textContent = '🔥';
+        await wait(500);
+        const boom = mk('span','fx pop-fx',stage,{bottom:'22%',left:'12%'});
+        boom.textContent = '💥';
+        boom.style.fontSize = '38px';
+        sndBoom();
+        await wait(500);
+        const eng = document.getElementById('engine');
+        eng.classList.add('engine-shake');
+        await wait(400);
+        const rope = document.getElementById('ropeSlot');
+        rope.classList.add('rope-pull');
+        rope.style.transform = 'rotate(-30deg) translateX(-40px) scale(.7)';
+        await wait(1200);
+        eng.classList.remove('engine-shake');
+        const lock = document.getElementById('doorLock');
+        lock.textContent = '🕊️';
+        lock.classList.add('unlocked');
+        await wait(600);
+        document.getElementById('doorFrame').classList.add('opened');
+        await wait(500);
+      },
+      message:`
+        ⚙️ موتور کار کرد و دروازه باز شد!<br><br>
+        <span class="badge chem">🔥 تغییر شیمیایی</span>
+        <span class="badge work">⚙️ تبدیل به کار</span><br>
+        بنزین <b>سوخت</b> ← گاز داغ <b>منبسط</b> شد ← پیستون <b>حرکت</b> کرد ← طناب کشیده شد ← دروازه <b>باز</b> شد.<br>
+        <span style="color:#7dffd4">🔋 انرژی شیمیایی ← 🔥 گرمایی ← ⚙️ مکانیکی ← 🚪 کار</span>
+      `
+    }
+  ]
+}
+
+];
+
+/* ============================================================
+   ابزارها
+   ============================================================ */
+const $ = id => document.getElementById(id);
+const fa = n => n.toLocaleString('fa-IR');
+const wait = ms => new Promise(r => setTimeout(r, ms));
+const mk = (tag, cls, parent, styles={}) => {
+  const el = document.createElement(tag);
+  if(cls) el.className = cls;
+  Object.assign(el.style, styles);
+  parent.appendChild(el);
+  return el;
+};
+
+/* ---------- صدا ---------- */
+let ac = null;
+function beep(f, dur=.1, type='sine', vol=.07, delay=0){
+  try{
+    if(!ac) ac = new (window.AudioContext||window.webkitAudioContext)();
+    const t = ac.currentTime + delay;
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.type = type; o.frequency.value = f;
+    g.gain.setValueAtTime(vol, t);
+    g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+    o.connect(g); g.connect(ac.destination);
+    o.start(t); o.stop(t + dur + .02);
+  }catch(e){}
+}
+const sndClick = () => beep(500,.05,'square',.04);
+const sndFail  = () => { beep(180,.15,'sawtooth',.06); beep(130,.2,'sawtooth',.06,.13); };
+const sndOk    = () => { beep(600,.08,'sine',.07); beep(800,.12,'sine',.07,.08); };
+const sndBoom  = () => { beep(80,.4,'sawtooth',.1); beep(120,.3,'square',.08,.1); };
+const sndWin   = () => { beep(660,.1,'sine',.08); beep(880,.12,'sine',.08,.1); beep(1180,.18,'sine',.08,.24); };
+
+/* ============================================================
+   وضعیت
+   ============================================================ */
+let state = {
+  level:0, score:0, errs:0,
+  step:0, solved:false, busy:false, used:{}
+};
+
+function startGame(){
+  state = { level:0, score:0, errs:0, step:0, solved:false, busy:false, used:{} };
+  switchScreen('scr-game');
+  loadLevel();
+}
+
+function switchScreen(id){
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  $(id).classList.add('active');
+}
+
+function loadLevel(){
+  const lv = LEVELS[state.level];
+  state.step = 0;
+  state.solved = false;
+  state.busy = false;
+  state.used = {};
+
+  $('hudDoor').textContent = fa(state.level + 1) + ' از ' + fa(LEVELS.length);
+  $('hudScore').textContent = fa(state.score);
+  $('hudErr').textContent = fa(state.errs);
+
+  const stage = $('stage');
+  stage.style.background = lv.bg;
+  stage.innerHTML = lv.sceneHTML;
+
+  $('storyLine').innerHTML = '<span class="quote">📖 </span>' + lv.story;
+  $('feedback').className = 'feedback';
+  $('feedback').innerHTML = '';
+
+  $('hintBtn').style.display = 'inline-block';
+  $('nextBtn').classList.remove('show');
+  $('nextBtn').textContent = state.level === LEVELS.length - 1
+    ? 'پایان فرار 🏆'
+    : 'در بعدی ←';
+
+  renderInventory();
+}
+
+function renderInventory(){
+  const inv = $('inventory');
+  inv.innerHTML = '';
+  Object.entries(ITEMS).forEach(([key, item]) => {
+    const el = document.createElement('div');
+    el.className = 'inv-item';
+    el.dataset.key = key;
+    el.innerHTML = `<span class="ico">${item.emoji}</span><span class="lbl">${item.name}</span>`;
+    el.onclick = () => useItem(key);
+    if(state.used[key]) el.classList.add('used');
+    inv.appendChild(el);
+  });
+}
+
+/* ============================================================
+   استفاده از وسیله
+   ============================================================ */
+async function useItem(key){
+  if(state.busy || state.solved) return;
+  sndClick();
+
+  const lv = LEVELS[state.level];
+  const nextStep = lv.steps[state.step];
+  const fb = $('feedback');
+  const invItem = document.querySelector(`.inv-item[data-key="${key}"]`);
+
+  if(nextStep && nextStep.item === key){
+    state.busy = true;
+    state.used[key] = true;
+    if(invItem) invItem.classList.add('used');
+
+    await nextStep.animate($('stage'));
+
+    sndOk();
+    fb.className = 'feedback show ok';
+    fb.innerHTML = nextStep.message;
+
+    state.step++;
+
+    if(state.step >= lv.steps.length){
+      state.solved = true;
+      $('hintBtn').style.display = 'none';
+      await wait(500);
+      sndWin();
+
+      const pts = state.errs === 0 ? 20 : state.errs === 1 ? 15 : 10;
+      state.score += pts;
+      $('hudScore').textContent = fa(state.score);
+
+      const win = document.createElement('div');
+      win.className = 'feedback show ok';
+      win.style.marginTop = '8px';
+      win.innerHTML = `🎉 <b>در باز شد!</b> (امتیاز این در: +${fa(pts)})`;
+      fb.parentNode.insertBefore(win, fb.nextSibling);
+
+      $('nextBtn').classList.add('show');
+    }
+    state.busy = false;
+  } else {
+    sndFail();
+    state.errs++;
+    $('hudErr').textContent = fa(state.errs);
+
+    fb.className = 'feedback show bad';
+    fb.innerHTML = '❌ این وسیله کار نمی‌کنه! به راهنما فکر کن.';
+
+    if(invItem){
+      invItem.classList.add('shake');
+      setTimeout(()=>invItem.classList.remove('shake'), 500);
+    }
+  }
+}
+
+/* ---------- راهنما ---------- */
+function showHint(){
+  sndClick();
+  const lv = LEVELS[state.level];
+  $('feedback').className = 'feedback show info';
+  $('feedback').innerHTML = '💡 <b>راهنما:</b> ' + lv.hint;
+}
+
+/* ---------- در بعدی ---------- */
+function nextDoor(){
+  sndClick();
+  state.level++;
+  if(state.level >= LEVELS.length){
+    endGame();
+  } else {
+    loadLevel();
+    window.scrollTo({top:0, behavior:'smooth'});
+  }
+}
+
+/* ============================================================
+   پایان
+   ============================================================ */
+function endGame(){
+  switchScreen('scr-end');
+  $('endScore').textContent = fa(state.score);
+
+  let msg;
+  if(state.errs <= 2){
+    msg = '🥇 <b>عالی بودی!</b> تو با دقت تشخیص دادی کِی تغییر فیزیکی و کِی شیمیاییه.<br><br>' +
+          '🧊 <b>تغییر فیزیکی</b>: حالت یا شکل عوض می‌شه، ولی ماده همونه.<br>' +
+          '🔥 <b>تغییر شیمیایی</b>: مادهٔ جدید ساخته می‌شه — می‌تونه مفید یا مضر باشه.<br>' +
+          '⚙️ <b>تبدیل به کار</b>: وقتی تغییر شیمیایی رخ می‌ده، انرژی آزاد می‌شه که می‌شه با اون کار انجام داد.';
+  } else if(state.errs <= 5){
+    msg = '👍 <b>خوب بود!</b> فقط یه کم دقت بیشتر لازمه.<br><br>' +
+          '🧊 <b>تغییر فیزیکی</b>: ذوب، تبخیر، بریدن، خرد کردن.<br>' +
+          '🔥 <b>تغییر شیمیایی</b>: سوختن، زنگ زدن، تجزیه، فاسد شدن.<br>' +
+          '⚙️ <b>تبدیل به کار</b>: انرژی شیمیایی ← گرمایی ← مکانیکی ← کار.';
+  } else {
+    msg = '💪 <b>سخت بود، ولی مهمه که بفهمی:</b><br><br>' +
+          '🧊 وقتی فقط <b>حالت یا شکل</b> ماده عوض می‌شه ولی خودش همونه = تغییر فیزیکی.<br>' +
+          '🔥 وقتی <b>مادهٔ جدید</b> ساخته می‌شه = تغییر شیمیایی.<br>' +
+          '⚙️ بعضی تغییرهای شیمیایی مفیدن (مثل سوختن سوخت در موتور) و بعضی مضر (مثل آتش‌سوزی).<br><br>' +
+          'یه بار دیگه امتحان کن!';
+  }
+  $('endMsg').innerHTML = msg;
+
+  beep(523,.12,'sine',.08,0); beep(659,.12,'sine',.08,.12);
+  beep(784,.12,'sine',.08,.24); beep(1047,.3,'sine',.08,.36);
+}
+</script>
+</body>
+</html>
